@@ -8,6 +8,8 @@
 @media(min-width:1450px){.finished-story{padding:42px 46px}}
 @media(max-width:1100px){header div{display:none}.finished-story{padding:30px}.study-figure{align-self:start}.right-column{grid-template-columns:1fr 1fr}.reader-toolbar{gap:9px}.tabs{gap:22px}}
 @media(max-width:720px){header{padding:0 12px;gap:0}header button{font-size:9px;padding:8px 5px}.finished-story{padding:25px 22px}.reader-toolbar{font-size:10px}.reader-toolbar>.badge{font-size:9px}.roadmap-tools{flex-direction:column;gap:10px}.roadmap-table th,.roadmap-table td{padding:11px 10px}.roadmap-table td{font-size:11px}.roadmap-table .badge{white-space:normal}.roadmap-table td:first-child{min-width:45px}.study-figure{padding:22px}.right-column{display:block}.family-tree{max-width:250px;margin:auto}.tabs{margin-left:-2px;margin-right:-2px}.privacy{padding:0 5px}}
+
+.narration-player{background:#edf1e7;border:1px solid #cfdbc5;border-radius:10px;padding:24px 27px;margin:0 0 26px}.narration-heading{display:flex;align-items:center;gap:13px;margin-bottom:20px}.narration-icon{display:grid;place-items:center;width:42px;height:42px;border:1px solid #c7d3be;border-radius:50%;font-size:23px;color:#50704d;background:#f8faf3}.narration-heading strong{font:21px Lora,Georgia,serif}.narration-heading p{font-size:11px;color:#77826d;margin:6px 0 0}.narration-buttons{display:flex;flex-wrap:wrap;gap:9px}.narration-buttons button{font-size:12px;min-height:39px}.narration-buttons .outline{background:#f9faf5;border-color:#c9d4be}.narration-buttons button:disabled{opacity:.4}.narration-settings{display:grid;grid-template-columns:minmax(0,1fr) 150px;gap:18px;margin-top:20px}.narration-settings label{font-size:11px;color:#69765e}.narration-settings select{background:#fafbf7;margin-top:6px;width:100%;min-width:0;border-color:#c9d4be;font-size:12px;padding:10px}.narration-position{display:flex;align-items:center;gap:14px;margin-top:19px}.narration-position progress{flex:1;margin:0;height:4px}.narration-position span{font-size:10px;color:#7b876f;min-width:75px;text-align:right}.narration-status{font-size:12px;line-height:1.7;color:#40583c;margin:14px 0 0;min-height:20px}.narration-hint{font-size:10px;line-height:1.8;color:#7b866f;margin:8px 0 0;max-width:800px}@media(max-width:720px){.narration-player{padding:21px 18px}.narration-settings{grid-template-columns:minmax(0,1fr) 100px;gap:10px}.narration-heading strong{font-size:19px}.narration-buttons{gap:6px}.narration-buttons button{font-size:11px;padding:9px 10px}.narration-settings select{font-size:11px}.narration-hint{font-size:10px}}
 </style></head><body>
 <aside id="sidebar"><a class="brand" href="#"><span class="brandmark">b.</span><span>THE BABYLON STUDY<small>A chapter at a time</small></span></a><div class="book-title">“Babylon the Great<br>Has Fallen!”<em>God’s Kingdom Rules! · 1963</em></div><div class="progress-label"><span>Your journey</span><strong id="progressText"></strong></div><progress id="progress" max="31" value="0"></progress><div class="chapter-heading">CONTENTS <span>31 CHAPTERS</span></div><input id="chapterSearch" type="search" placeholder="Find a chapter…" aria-label="Find a chapter"><nav id="chapters" aria-label="Chapters"></nav><div class="sidebar-footer"><span class="save-dot"></span> Saved on this browser <button id="backup">Backup</button></div></aside>
 <div class="shell"><header><button id="menu" aria-label="Toggle chapter menu">☰</button><div>PERSONAL READING WORKSPACE</div><button id="sourcesBtn" class="quiet">Source guide ↗</button></header><main><div class="eyebrow" id="chapterEyebrow"></div><div class="title-row"><h1 id="chapterTitle"></h1><button id="complete" class="outline"></button></div><p class="intro">Take it slowly. Follow the story. Keep what you discover.</p><div class="tabs" role="tablist" aria-label="Study sections"><button data-tab="story" role="tab">The story</button><button data-tab="references" role="tab">People & references</button><button data-tab="glossary" role="tab">Glossary</button><button data-tab="timeline" role="tab">Timeline</button><button data-tab="notes" role="tab">My notebook <span id="noteCount"></span></button></div><div id="view"></div><footer class="chapter-footer"><button id="previous" class="quiet">← Previous chapter</button><span id="position"></span><button id="next" class="primary">Next chapter →</button></footer><p class="privacy">Your study belongs to you. Entries save on this browser only. Export a backup to carry them to another device.</p></main></div><div id="toast" role="status"></div>
@@ -433,4 +435,127 @@ if(!Number.isInteger(state.lastSourceChapter)){try{const previous=JSON.parse(loc
 // much longer new story. A saved personal draft remains the selected draft.
 if(state.episodeData.currentId==='preview'||!isReadable(state.episodeData.currentId))state.episodeData.currentId=BUILT_IN_EPISODES[0].id;
 chooseMode('episodes');
+</script><script>// Browser-owned speech only. Story data, not page text, supplies the narration.
+const NARRATION_SPEEDS=[0.75,0.9,1,1.1,1.25];
+function narrationSections(episode,maxLength=180){
+ const result=[];
+ function paragraph(text,pause=430){
+  const clean=String(text||'').replace(/\s+/g,' ').trim();if(!clean)return;
+  let pending='';
+  function push(){if(pending.trim())result.push({text:pending.trim(),pause:90});pending='';}
+  for(const token of clean.split(/\s+/)){
+    if(pending&&pending.length+token.length+1>maxLength)push();
+    if(token.length>maxLength){push();for(let i=0;i<token.length;i+=maxLength)result.push({text:token.slice(i,i+maxLength),pause:50});}
+    else pending+=(pending?' ':'')+token;
+   // Preserve every token, including abbreviations such as B.C.E.
+   if(/[.!?][”"’']*$/.test(token)&&pending.length>maxLength*0.55)push();
+  }
+  push();if(result.length)result[result.length-1].pause=pause;
+ }
+ paragraph(`${episode.number?'Episode '+episode.number+'. ':''}${episode.title}`,650);
+ for(const field of ['opening','story'])for(const p of String(episode[field]||'').split(/\n\s*\n/))paragraph(p);
+ if(episode.drama){paragraph('The following dialogue is illustrative, not recorded speech.',450);for(const line of episode.drama.split(/\n+/))paragraph(line,300);}
+ for(const field of ['connection','ending'])for(const p of String(episode[field]||'').split(/\n\s*\n/))paragraph(p);
+ return result;
+}
+function narrationVoiceKey(voice){return voice.voiceURI||`${voice.name}|${voice.lang}`;}
+function preferredNarrationVoice(voices){
+ const ranked=voices.map((voice,index)=>({voice,index,score:(/^en(?:[-_]|$)/i.test(voice.lang)?100:0)+(/natural|neural|enhanced|premium/i.test(voice.name)?25:0)+(voice.default?8:0)+(voice.localService?2:0)+(/^en[-_]US$/i.test(voice.lang)?3:0)}));
+ ranked.sort((a,b)=>b.score-a.score||a.index-b.index);return ranked[0]?.voice||null;
+}
+class EpisodeNarrator{
+ constructor({synth,Utterance,schedule=setTimeout,unschedule=clearTimeout,onChange=()=>{}}){
+  this.synth=synth;this.Utterance=Utterance;this.schedule=schedule;this.unschedule=unschedule;this.onChange=onChange;
+  this.supported=!!(synth&&typeof Utterance==='function'&&['speak','cancel','pause','resume','getVoices'].every(k=>typeof synth[k]==='function'));
+  this.status='idle';this.episodeId=null;this.chunks=[];this.index=0;this.token=0;this.active=null;this.gapTimer=null;this.watchdog=null;this.voices=[];this.voiceId=null;this.rate=1;this.message=this.supported?'Ready when you are.':'Read Aloud is unavailable in this browser. Try Microsoft Edge, Chrome, or another browser with speech synthesis.';
+ }
+ notify(){this.onChange(this);}
+ clearTimers(){if(this.gapTimer!==null)this.unschedule(this.gapTimer);if(this.watchdog!==null)this.unschedule(this.watchdog);this.gapTimer=null;this.watchdog=null;}
+ setVoices(list){this.voices=Array.from(list||[]);this.notify();}
+ voice(){return this.voiceId===''?null:this.voices.find(v=>narrationVoiceKey(v)===this.voiceId)||preferredNarrationVoice(this.voices);}
+ setRate(rate){if(NARRATION_SPEEDS.includes(Number(rate)))this.rate=Number(rate);this.notify();}
+ setVoice(id){this.voiceId=id;this.notify();}
+ syncEpisode(id){if(this.episodeId&&this.episodeId!==id){this.stop();this.episodeId=id;this.chunks=[];}else if(!this.episodeId)this.episodeId=id;}
+ stop(message='Stopped. Play Episode starts again from the beginning.'){
+  ++this.token;this.clearTimers();this.active=null;this.status='idle';this.index=0;
+  if(this.supported){try{this.synth.cancel();}catch{}}
+  this.message=this.supported?message:'Read Aloud is unavailable in this browser. Try Edge or Chrome.';this.notify();
+ }
+ play(episode){
+  if(!this.supported){this.notify();return;}
+  this.stop();this.episodeId=episode.id;this.chunks=narrationSections(episode);this.index=0;
+  if(!this.chunks.length){this.message='There is no story text to read.';this.notify();return;}
+  // Some engines remain paused after cancel(). Reset that state before speaking.
+  try{this.synth.resume();}catch{}
+  this.status='playing';this.message='Starting the episode…';this.notify();this.speakNext(this.token);
+ }
+ armWatchdog(token,utterance){
+  if(this.watchdog!==null)this.unschedule(this.watchdog);
+  this.watchdog=this.schedule(()=>{if(token===this.token&&this.active===utterance&&this.status==='playing')this.fail('The speech service stopped responding. Press Play Episode to restart, or try another voice.');},Math.max(20000,utterance.text.length*140/this.rate+10000));
+ }
+ speakNext(token){
+  if(token!==this.token||this.status!=='playing')return;
+  this.gapTimer=null;
+  if(this.index>=this.chunks.length){this.active=null;this.status='finished';this.message='Episode finished. Continue to the next story whenever you are ready.';this.notify();return;}
+  const section=this.chunks[this.index];
+  let utterance;try{utterance=new this.Utterance(section.text);}catch{this.fail('The browser could not create the narration. Try another browser.');return;}
+  utterance.rate=this.rate;utterance.pitch=1;utterance.volume=1;
+  const voice=this.voice();if(voice){utterance.voice=voice;utterance.lang=voice.lang;}else utterance.lang='en-US';
+  this.active=utterance;
+  utterance.onstart=()=>{if(token!==this.token||this.active!==utterance)return;this.message=this.status==='paused'?'Paused. Resume continues this episode.':'Reading your episode.';this.notify();};
+  utterance.onend=()=>{
+   if(token!==this.token||this.active!==utterance)return;
+   if(this.watchdog!==null)this.unschedule(this.watchdog);this.watchdog=null;this.active=null;this.index++;
+   this.notify();if(this.status==='playing')this.gapTimer=this.schedule(()=>this.speakNext(token),section.pause);
+  };
+  utterance.onerror=event=>{if(token!==this.token||this.active!==utterance)return;const messages={'not-allowed':'Your browser blocked speech. Click Play Episode again while this page is active.','voice-unavailable':'That voice is unavailable. Select a different narrator and press Play Episode.','network':'That browser voice needs a connection. Try a voice marked “on device.”','audio-busy':'Audio is busy. Stop other audio and try Play Episode again.','audio-hardware':'No audio output is available. Check your speakers or headphones.'};this.fail(messages[event.error]||'Narration was interrupted. Press Play Episode to restart, or choose another voice.');};
+  this.armWatchdog(token,utterance);
+  try{this.synth.speak(utterance);}catch{this.fail('Speech could not start. Try a different voice or browser.');}
+ }
+ pause(){
+  if(!this.supported||this.status!=='playing')return;
+  this.status='paused';this.clearTimers();
+  try{if(this.active)this.synth.pause();}catch{this.fail('Pause is unavailable in this browser. Use Stop to end narration.');return;}
+  this.message='Paused. Resume continues this episode.';this.notify();
+ }
+ resume(){
+  if(!this.supported||this.status!=='paused')return;
+  this.status='playing';this.message='Continuing the episode…';this.notify();
+  const active=this.active;
+  try{this.synth.resume();}catch{this.fail('The browser could not resume. Press Play Episode to restart.');return;}
+  if(active&&this.active===active)this.armWatchdog(this.token,active);
+  else if(!active)this.speakNext(this.token);
+ }
+ fail(message){this.stop(message);this.status='error';this.message=message;this.notify();}
+}
+const AUDIO_PREFS_KEY='babylon-audio-preferences-v1';
+let audioPreferences={voiceId:null,rate:1};
+try{const saved=JSON.parse(localStorage.getItem(AUDIO_PREFS_KEY)||'null');if(saved&&NARRATION_SPEEDS.includes(saved.rate)&&(saved.voiceId===null||typeof saved.voiceId==='string'))audioPreferences={voiceId:saved.voiceId,rate:saved.rate};}catch{}
+const episodeNarrator=new EpisodeNarrator({synth:typeof window.speechSynthesis==='object'?window.speechSynthesis:null,Utterance:typeof SpeechSynthesisUtterance==='function'?SpeechSynthesisUtterance:null,onChange:()=>updateNarrationPlayer()});
+episodeNarrator.voiceId=audioPreferences.voiceId;episodeNarrator.rate=audioPreferences.rate;
+function saveAudioPreferences(){try{localStorage.setItem(AUDIO_PREFS_KEY,JSON.stringify({voiceId:episodeNarrator.voiceId,rate:episodeNarrator.rate}));}catch{}}
+function refreshNarrationVoices(){if(!episodeNarrator.supported)return;try{episodeNarrator.setVoices(episodeNarrator.synth.getVoices());}catch{episodeNarrator.setVoices([]);}}
+function narrationPlayerHTML(){return `<section class="narration-player" aria-label="Episode audio narration"><div class="narration-heading"><span class="narration-icon" aria-hidden="true">♫</span><div><strong>Listen to the story</strong><p>Your browser’s voice. Your pace.</p></div></div><div class="narration-buttons"><button id="audioPlay" class="primary" data-audio-action="play" title="Start or restart this episode">▶ Play Episode</button><button id="audioPause" class="outline" data-audio-action="pause">⏸ Pause</button><button id="audioResume" class="outline" data-audio-action="resume">▶ Resume</button><button id="audioStop" class="quiet" data-audio-action="stop">⏹ Stop</button></div><div class="narration-settings"><label>Narrator’s voice<select id="audioVoice" aria-label="Narrator voice"></select></label><label>Reading speed<select id="audioSpeed" aria-label="Narration speed">${NARRATION_SPEEDS.map(rate=>`<option value="${rate}">${rate}x</option>`).join('')}</select></label></div><div class="narration-position"><progress id="audioProgress" max="1" value="0" aria-label="Narration sections completed"></progress><span id="audioPosition"></span></div><p id="audioStatus" class="narration-status" role="status" aria-live="polite"></p><p class="narration-hint">Play Episode restarts from the beginning. Voice and speed changes apply to the next short section. Voices marked “on device” can work offline; other voices may need internet. Sound and expression depend on your device.</p></section>`;}
+function updateNarrationPlayer(){
+ const voiceSelect=$('audioVoice'),status=$('audioStatus');if(!voiceSelect||!status)return;
+ const n=episodeNarrator,available=n.supported,playing=n.status==='playing',paused=n.status==='paused';
+ $('audioPlay').disabled=!available;$('audioPlay').setAttribute('aria-label',playing||paused?'Restart episode from the beginning':'Play episode');
+ $('audioPause').disabled=!available||!playing;$('audioResume').disabled=!available||!paused;$('audioStop').disabled=!available||(!playing&&!paused);
+ voiceSelect.disabled=!available;$('audioSpeed').disabled=!available;
+ const signature=JSON.stringify(n.voices.map(v=>[narrationVoiceKey(v),v.name,v.lang,v.localService]));
+ if(voiceSelect.dataset.voicesSignature!==signature){voiceSelect.innerHTML='<option value="">Browser default</option>'+n.voices.map(voice=>`<option value="${esc(narrationVoiceKey(voice))}">${esc(voice.name)} · ${esc(voice.lang)}${voice.localService?' · on device':' · browser / online'}</option>`).join('');voiceSelect.dataset.voicesSignature=signature;}
+ voiceSelect.value=n.voiceId===''?'':n.voice()?narrationVoiceKey(n.voice()):'';$('audioSpeed').value=String(n.rate);
+ $('audioProgress').max=Math.max(1,n.chunks.length);$('audioProgress').value=n.status==='finished'?n.chunks.length:n.index;
+ $('audioPosition').textContent=n.chunks.length?`${n.status==='finished'?n.chunks.length:Math.min(n.index+1,n.chunks.length)} / ${n.chunks.length} sections`:'';
+ status.textContent=n.message;
+ if(available&&!n.voices.length&&n.status==='idle')status.textContent='Your browser’s default voice is available to try. Installed voices may take a moment to appear in the list.';
+}
+const episodeStoryBeforeAudio=episodeStory;
+episodeStory=function(){episodeNarrator.syncEpisode(ep().id);episodeStoryBeforeAudio();$('view').insertAdjacentHTML('afterbegin',narrationPlayerHTML());updateNarrationPlayer();$('audioVoice').onchange=ev=>{episodeNarrator.setVoice(ev.target.value);saveAudioPreferences();};$('audioSpeed').onchange=ev=>{episodeNarrator.setRate(Number(ev.target.value));saveAudioPreferences();};};
+const renderBeforeAudio=render;
+render=function(){if(tab!=='story'||readingMode!=='episodes'){if(episodeNarrator.status==='playing'||episodeNarrator.status==='paused')episodeNarrator.stop();}else episodeNarrator.syncEpisode(ep().id);renderBeforeAudio();};
+document.addEventListener('click',ev=>{const action=ev.target.closest('[data-audio-action]')?.dataset.audioAction;if(!action)return;if(action==='play')episodeNarrator.play(ep());if(action==='pause')episodeNarrator.pause();if(action==='resume')episodeNarrator.resume();if(action==='stop')episodeNarrator.stop();});
+if(episodeNarrator.supported){refreshNarrationVoices();if(typeof episodeNarrator.synth.addEventListener==='function')episodeNarrator.synth.addEventListener('voiceschanged',refreshNarrationVoices);else episodeNarrator.synth.onvoiceschanged=refreshNarrationVoices;}
+window.addEventListener('pagehide',()=>episodeNarrator.stop());
+render();
 </script></body></html>
